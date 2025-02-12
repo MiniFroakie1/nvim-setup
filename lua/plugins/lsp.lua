@@ -15,68 +15,46 @@ return {
 
     config = function()
         local cmp = require('cmp');
-        local cmp_lsp = require('cmp_nvim_lsp');
-        local capabilities = vim.tbl_deep_extend(
-            'force',
-            {},
-            vim.lsp.protocol.make_client_capabilities(),
-            cmp_lsp.default_capabilities());
+        local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities = require('cmp_nvim_lsp')
+        local on_attach = function(_, bufnr)
+            local nmap = function(keys, func, desc)
+                if desc then
+                    desc = 'LSP: ' .. desc
+                end
+
+                vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
+            end
+        end
+        local servers = {
+            lua_ls = {
+                Lua = {
+                    runtime = { version = 'Lua 5.1' },
+                    diagnostics = {
+                        globals = { 'bit', 'vim', 'it', 'describe', 'before_each', 'after_each' },
+                    }
+                }
+            },
+            ts_ls = {},
+        }
 
         require('fidget').setup({});
         require('mason').setup();
-        require('mason-lspconfig').setup({
-            ensure_installed = {
-                'lua_ls',
-                'ts_ls',
-                'svelte',
-                'csharp_ls',
-            },
-            handlers = {
-                function(server_name)
-                    require('lspconfig')[server_name].setup {
-                        capabilities = capabilities
-                    }
-                end,
+        local mason_lspconfig = require('mason-lspconfig');
 
-                zls = function()
-                    local lspconfig = require('lspconfig');
-                    lspconfig.zls.setup({
-                        root_dir = lspconfig.util.root_pattern('.git', 'build.zig', 'zls.json'),
-                        settings = {
-                            zls = {
-                                enable_inlay_hints = true,
-                                enable_snippets = true,
-                                warn_style = true,
-                            },
-                        },
-                    })
-                    vim.g.zig_fmt_parse_errors = 0;
-                    vim.g.zig_fmt_autosave = 0;
+        mason_lspconfig.setup {
+            ensure_installed = vim.tbl_keys(servers),
+        }
 
-                end,
-                ['lua_ls'] = function()
-                    local lspconfig = require('lspconfig');
-                    lspconfig.lua_ls.setup {
-                        capabilities = capabilities,
-                        settings = {
-                            Lua = {
-                                runtime = { version = 'Lua 5.1' },
-                                diagnostics = {
-                                    globals = { 'bit', 'vim', 'it', 'describe', 'before_each', 'after_each' },
-                                }
-                            }
-                        }
-                    }
-                end,
-                ['svelte'] = function()
-                    local lspconfig = require('lspconfig');
-                    lspconfig.svelte.setup{};
-                end,
-            }
-
-        });
-
-        local cmp_select = { behavior = cmp.SelectBehavior.select };
+        mason_lspconfig.setup_handlers {
+            function(server_name)
+                require('lspconfig')[server_name].setup {
+                    capabilities = capabilities,
+                    on_attach = on_attach,
+                    settings = servers[server_name],
+                }
+            end,
+        }
 
         cmp.setup({
             snippet = {
@@ -95,7 +73,7 @@ return {
                 { name = 'lunasnip' },
             }, {
                 { name = 'buffer' },
-            });
+            }),
         });
 
         vim.diagnostic.config({
