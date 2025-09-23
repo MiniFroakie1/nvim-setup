@@ -6,7 +6,7 @@ return {
         { "antosha417/nvim-lsp-file-operations", config = true },
     },
     config = function()
-        local lspconfig = require("lspconfig");
+        local lspconfig = vim.lsp.config;
         local cmp_nvim_lsp = require("cmp_nvim_lsp");
 
         local keymap = vim.keymap;
@@ -63,17 +63,17 @@ return {
             vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" });
         end
 
-        lspconfig["html"].setup({
+        lspconfig("html", {
             capabilities = capabilities,
             on_attach = on_attach,
         });
 
-        lspconfig["ts_ls"].setup({
+        lspconfig("ts_ls", {
             capabilities = capabilities,
             on_attach = on_attach,
         });
 
-        lspconfig["lua_ls"].setup({
+        lspconfig("lua_ls", {
             capabilities = capabilities,
             on_attach = on_attach,
             settings = {
